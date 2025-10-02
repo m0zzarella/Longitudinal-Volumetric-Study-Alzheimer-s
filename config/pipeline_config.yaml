@@ -1,0 +1,60 @@
+processing:
+
+  normalization:
+    default_method: "zscore"  
+    methods_available:
+      - zscore
+      - minmax
+      - histogram_match
+      - nyul
+
+  registration:
+    default_type: "linear"  
+    cost_function: "corratio"  
+    interpolation: "trilinear"
+    
+  bet:
+    fractional_intensity: 0.5
+    gradient_threshold: 0.0
+    head_radius: 0.0  
+    
+  fast:
+    number_of_classes: 3  
+    bias_field_correction: true
+    use_priors: false
+
+
+files:
+  input_extensions: [".nii", ".nii.gz"]
+  dicom_folder_name: "DICOMs"
+  visit_pattern: "Visit*"
+  
+  outputs:
+    bias_corrected: "_N4.nii.gz"
+    normalized: "_N4_norm.nii.gz"
+    skull_stripped: "_BET.nii.gz"
+    registered: "_BET_reg.nii.gz"
+    segmentation: "_BET_pve_{}.nii.gz"  
+    volumes_csv: "_volumes.csv"
+    qc_overlay: "_qc_overlay.png"
+    registration_qc: "_registration_qc.png"
+
+quality_control:
+  generate_overlays: true
+  slice_positions: [0.3, 0.5, 0.7]  
+  registration_metrics: true
+  volume_validation: true
+
+parallel:
+  max_cores: 4  
+  enable_parallel: true
+
+directories:
+  results_root: "results"
+  temp_dir: "temp"
+  logs_dir: "logs"
+  
+logging:
+  level: "INFO"  
+  log_to_file: true
+  log_filename: "pipeline.log"

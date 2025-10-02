@@ -1,0 +1,31 @@
+name: longitudinal_neuroanalysis_pipeline
+
+channels:
+  - conda-forge
+  - r
+  - bioconda
+
+dependencies:
+  - dcm2niix=1.0.20230411
+  - fsl-core=6.0.5
+  
+  - r-base=4.3.2
+  - r-devtools
+  - r-remotes
+  - r-scales
+  
+  - python=3.11
+  - numpy
+  - nibabel
+  - matplotlib
+  - pandas
+  - scipy
+  - parallel
+  - imagemagick
+  - git
+  - r-oro.nifti
+  - r-oro.dicom
+
+r_github_packages:
+  - muschellij2/neurobase
+  - muschellij2/fslr
