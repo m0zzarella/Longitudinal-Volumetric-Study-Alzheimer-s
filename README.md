@@ -14,13 +14,13 @@ Code repository of aforementioned paper for longitudinal processing of tissue vo
 Alzheimer’s Disease (AD) is an irreversible neurode-generative disorder affecting millions of individuals today. The prognosis of the disease solely depends on treating symptoms as they arise and proper caregiving, as there are no current medical preventative treatments apart from newly developing drugs, which can, at most, slow the progression. Thus, early detection of the disease at its most premature state is of paramount importance. We performed a longitudinal study of structural MRI for certain test subjects with AD and temporal data selected randomly from the Alzheimer’s Disease Neuroimaging Initiative (ADNI) database. We implement a robust pipeline to study the data, including modern pre-processing techniques such as spatial image registration, skull stripping, inhomogeneity correction, and tissue segmentation using an unsupervised learning approach (hidden Markov field model) using intensity histogram information. The temporal data across multiple visits is used to study the structural change in volumes of these tissue classes, namely, cerebrospinal fluid (CSF), grey matter (GM), and white matter (WM) as the patients progressed further into the disease. We also analyze the changes in features extracted, with a modified Mann-Kendall statistic to detect changes in volume trends for each patient. A monotonic decrease (85.31\%, 95.54\%) was observed for GM volumes consistent with clinical findings, whereas the CSF counterpart increased monotonically with varying confidence scores (69.85\%, 85.31\%, 95.54\%). Even though it is observed that WM volumes do not follow a majority trend, they exhibit an intolerable shifting from the baseline according to individual prognosis
 
 
-## Datasets
+## Dataset Used
 - The Alzheimer’s Disease Neuroimaging Initiative (ADNI) is a longitudinal, multi-center, observational study.
 [ADNI](https://adni.loni.usc.edu/)
 
-## Pipeline Features
+## Pipeline Functionalities
 
-The repo currently contains the following functionalities:
+The repo currently contains the following:
 
 - **DICOM to NIfTI conversion** with dcm2niix(standalone) and dicom2nifti(integrated)
 - **N4 bias field correction** using FSL
@@ -33,7 +33,7 @@ The repo currently contains the following functionalities:
 
 ## Installation
 
-Install RStudio and the following libraries
+Install RStudio and the following libraries and oackages
 
 ### System
 - [dcm2niix](https://github.com/rordenlab/dcm2niix) – DICOM → NIfTI conversion  
@@ -56,7 +56,7 @@ remotes::install_github("muschellij2/neurobase")
 remotes::install_github("muschellij2/fslr")
 
 ```
-## Folder Structure
+## Example Folder Structure
 
 Patient folders must contain visit subfolders:
 
