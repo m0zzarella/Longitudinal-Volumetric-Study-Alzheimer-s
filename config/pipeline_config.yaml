@@ -20,7 +20,7 @@ processing:
     
   fast:
     number_of_classes: 3  
-    bias_field_correction: true
+    bias_field_correction: false
     use_priors: false
 
 
