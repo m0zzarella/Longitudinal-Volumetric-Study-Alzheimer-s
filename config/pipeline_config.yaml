@@ -38,10 +38,13 @@ files:
     normalized: "_N4_norm.nii.gz"
     skull_stripped: "_BET.nii.gz"
     registered: "_BET_reg.nii.gz"
-    segmentation: "_BET_pve_{}.nii.gz"  
+    retry_registered: "_BET_reg_{retry_type}.nii.gz"  
+    segmentation: "_BET_pve_{}.nii.gz"
     volumes_csv: "_volumes.csv"
     qc_overlay: "_qc_overlay.png"
     registration_qc: "_registration_qc.png"
+    registration_quality: "_registration_quality.csv"
+    failed_visits: "_failed_visits.csv"  
 
 quality_control:
   generate_overlays: true
@@ -50,6 +53,11 @@ quality_control:
   volume_validation: true
   min_correlation: 0.7
   max_mse: 1000
+
+  enable_registration_retry: true
+  retry_registration_type: "nonlinear"
+  #retry_registration_types: ["nonlinear", "linear_stricter"]
+  #max_registration_attempts: 2
 
 parallel:
   max_cores: 4  
