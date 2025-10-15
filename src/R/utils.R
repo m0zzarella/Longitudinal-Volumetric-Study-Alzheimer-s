@@ -4,10 +4,86 @@ suppressMessages({
   library(neurobase)
   library(fslr)
   library(scales)
+  library(yaml)
 })
 
+load_config <- function(config_path = file.path(dirname(getwd()), "config", "pipeline_config.yaml")) {
+
+  if (!file.exists(config_path)) {
+    warning("Configuration file not found at: ", config_path, ". Using default values.")
+    return(get_default_config())
+  }
+
+  tryCatch({
+    config <- yaml::read_yaml(config_path)
+    return(config)
+  }, error = function(e) {
+    warning("Error loading configuration file: ", e$message, ". Using default values.")
+    return(get_default_config())
+  })
+}
+
+get_default_config <- function() {
+  list(
+    processing = list(
+      bet = list(
+        fractional_intensity = 0.5,
+        gradient_threshold = 0.0,
+        head_radius = 0.0
+      ),
+      fast = list(
+        number_of_classes = 3,
+        bias_field_correction = FALSE,
+        use_priors = FALSE
+      ),
+      pve_threshold = 0.33,
+      mann_kendall_threshold = 1.0
+    ),
+    files = list(
+      input_extensions = c(".nii", ".nii.gz"),
+      dicom_folder_name = "DICOMs",
+      visit_pattern = "Visit*"
+    ),
+    outputs = list(
+      bias_corrected = "_N4.nii.gz",
+      normalized = "_N4_norm.nii.gz",
+      skull_stripped = "_BET.nii.gz",
+      registered = "_BET_reg.nii.gz",
+      segmentation = "_BET_pve_{}.nii.gz",
+      volumes_csv = "_volumes.csv",
+      qc_overlay = "_qc_overlay.png",
+      registration_qc = "_registration_qc.png"
+    ),
+    quality_control = list(
+      generate_overlays = TRUE,
+      slice_positions = c(0.3, 0.5, 0.7),
+      registration_metrics = TRUE,
+      volume_validation = TRUE
+    ),
+    parallel = list(
+      max_cores = 4,
+      enable_parallel = TRUE
+    ),
+    directories = list(
+      results_root = "results",
+      temp_dir = "temp",
+      logs_dir = "logs"
+    ),
+    logging = list(
+      level = "INFO",
+      log_to_file = TRUE,
+      log_filename = "pipeline.log"
+    )
+  )
+}
+
 #compute volume from a PVE map with thresholding
-compute_volume_ml <- function(pve_img, threshold = 0.33) {
+compute_volume_ml <- function(pve_img, threshold = NULL) {
+  if (is.null(threshold)) {
+    config <- load_config()
+    threshold <- config$processing$pve_threshold
+  }
+
   vdim <- prod(voxdim(pve_img))         #mm^3 per voxel
   nvox <- sum(pve_img > threshold)      #voxel count
   vol_ml <- (vdim * nvox) / 1000        #convert mm^3 to mL
@@ -177,9 +253,9 @@ calculate_image_similarity <- function(img1, img2, mask = NULL) {
   ))
 }
 
-validate_registration <- function(registered_img, reference_img, mask = NULL, 
-                                min_correlation = 0.7, max_mse = 1000) {
-  #Validate registration quality based on similarity metrics
+validate_registration <- function(registered_img, reference_img, mask = NULL,
+                                min_correlation = NULL, max_mse = NULL) {
+  #Validate registration quality 
   #Args:
   #  registered_img: NIfTI image object
   #  reference_img: NIfTI image object
@@ -188,13 +264,24 @@ validate_registration <- function(registered_img, reference_img, mask = NULL,
   #  max_mse: maximum MSE threshold
   #Returns:
   #  list of validation results
+
+  if (is.null(min_correlation) || is.null(max_mse)) {
+    config <- load_config()
+    if (is.null(min_correlation)) {
+      min_correlation <- config$quality_control$min_correlation
+    }
+    if (is.null(max_mse)) {
+      max_mse <- config$quality_control$max_mse
+    }
+  }
+
   similarity <- calculate_image_similarity(registered_img, reference_img, mask)
-  
-  is_valid <- !is.na(similarity$correlation) && 
+
+  is_valid <- !is.na(similarity$correlation) &&
               similarity$correlation >= min_correlation &&
               !is.na(similarity$mse) &&
               similarity$mse <= max_mse
-  
+
   return(list(
     is_valid = is_valid,
     metrics = similarity,
