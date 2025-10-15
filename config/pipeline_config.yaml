@@ -19,9 +19,13 @@ processing:
     head_radius: 0.0  
     
   fast:
-    number_of_classes: 3  
+    number_of_classes: 3
     bias_field_correction: false
     use_priors: false
+
+  pve_threshold: 0.33
+
+  mann_kendall_threshold: 1.0
 
 
 files:
@@ -41,9 +45,11 @@ files:
 
 quality_control:
   generate_overlays: true
-  slice_positions: [0.3, 0.5, 0.7]  
+  slice_positions: [0.3, 0.5, 0.7]
   registration_metrics: true
   volume_validation: true
+  min_correlation: 0.7
+  max_mse: 1000
 
 parallel:
   max_cores: 4  
