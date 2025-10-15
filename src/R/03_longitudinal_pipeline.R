@@ -65,8 +65,9 @@ ensure_dir(out_root)
 
 volumes <- list()
 visit_names <- c()
-baseline_img <- NULL  # Store baseline image for registration
-baseline_bet <- NULL  # Store baseline skull-stripped image
+baseline_img <- NULL  
+baseline_bet <- NULL  
+failed_visits <- list()  
 
 for (visit in sort(visit_dirs)) {
   vname <- basename(visit)
@@ -124,18 +125,60 @@ for (visit in sort(visit_dirs)) {
       registration_type = "linear",
       cost_function = "corratio"
     )
-    
+
     reg_img <- reg_result$final_registered
     writeNIfTI(reg_img, file.path(visit_out, paste0(vname, "_BET_reg")))
-    
+
     reg_quality <- validate_registration(reg_img, baseline_bet, baseline_mask)
-    
+
     if (reg_quality$is_valid) {
       message("Registration quality: valid")
-      bet_img <- reg_img  
+      bet_img <- reg_img
     } else {
-      message("Registration quality: using original image")
-      message("Correlation: ", round(reg_quality$metrics$correlation, 3))
+      message("Linear registration quality: using original image")
+      message("Linear registration - Correlation: ", round(reg_quality$metrics$correlation, 3))
+
+      if (config$quality_control$enable_registration_retry) {
+        message("Linear registration failed, attempting ", config$quality_control$retry_registration_type, "...")
+
+        reg_result_retry <- register_with_mask(
+          moving_img = bet_img,
+          fixed_img = baseline_bet,
+          moving_mask = brain_mask,
+          fixed_mask = baseline_mask,
+          registration_type = config$quality_control$retry_registration_type,
+          cost_function = "corratio"
+        )
+
+        reg_img_retry <- reg_result_retry$final_registered
+
+        retry_suffix <- paste0("_BET_reg_", config$quality_control$retry_registration_type)
+        writeNIfTI(reg_img_retry, file.path(visit_out, paste0(vname, retry_suffix)))
+
+        reg_quality_retry <- validate_registration(reg_img_retry, baseline_bet, baseline_mask)
+
+        if (reg_quality_retry$is_valid) {
+          message(config$quality_control$retry_registration_type, " registration succeeded")
+          reg_img <- reg_img_retry
+          reg_quality <- reg_quality_retry
+          bet_img <- reg_img
+        } else {
+          warning("Both linear and ", config$quality_control$retry_registration_type, " registration failed - skipping visit")
+          message(config$quality_control$retry_registration_type, " registration - Correlation: ",
+                  round(reg_quality_retry$metrics$correlation, 3))
+
+          failed_visits[[vname]] <- list(
+            reason = paste("Both linear and", config$quality_control$retry_registration_type, "registration failed"),
+            correlation = reg_quality_retry$metrics$correlation,
+            mse = reg_quality_retry$metrics$mse,
+            registration_type = config$quality_control$retry_registration_type
+          )
+
+          next
+        }
+      } else {
+        message("Registration retry disabled, using original image")
+      }
     }
     
     reg_quality_csv <- file.path(visit_out, paste0(vname, "_registration_quality.csv"))
@@ -215,6 +258,23 @@ if (length(volumes) >= 1) {
     write.csv(deltas[, c("Visit", "CSF_delta_ml", "GM_delta_ml", "WM_delta_ml")], delta_csv, row.names = FALSE)
     message("Wrote deltas table: ", delta_csv)
   }
+}
+
+if (length(failed_visits) > 0) {
+  failed_csv <- file.path(out_root, paste0(patient_id, "_failed_visits.csv"))
+  failed_df <- do.call(rbind, lapply(names(failed_visits), function(v) {
+    data.frame(
+      Visit = v,
+      Reason = failed_visits[[v]]$reason,
+      Correlation = failed_visits[[v]]$correlation,
+      MSE = failed_visits[[v]]$mse,
+      Registration_Type = failed_visits[[v]]$registration_type,
+      stringsAsFactors = FALSE
+    )
+  }))
+  write.csv(failed_df, failed_csv, row.names = FALSE)
+  message("\nFailed visits logged to: ", failed_csv)
+  message("Total failed visits: ", nrow(failed_df))
 }
 
 message("\nDone.")
