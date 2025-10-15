@@ -13,7 +13,8 @@ suppressMessages({
   library(neurobase)
   library(fslr)
   library(scales)
-  
+  library(yaml)
+
   get_script_dir <- function() {
     script_path <- tryCatch({
       sys.frame(1)$ofile
@@ -42,6 +43,8 @@ suppressMessages({
   source(file.path(script_dir, "utils.R"))
   source(file.path(script_dir, "04_intensity_normalization.R"))
   source(file.path(script_dir, "05_registration.R"))
+
+  config <- load_config()
 })
 
 `%||%` <- function(a, b) if (!is.null(a)) a else b
@@ -169,9 +172,9 @@ for (visit in sort(visit_dirs)) {
   pve_gm  <- readNIfTI(pve_gm_path,  reorient = FALSE)
   pve_wm  <- readNIfTI(pve_wm_path,  reorient = FALSE)
 
-  vol_csf <- compute_volume_ml(pve_csf, threshold = 0.33)
-  vol_gm  <- compute_volume_ml(pve_gm,  threshold = 0.33)
-  vol_wm  <- compute_volume_ml(pve_wm,  threshold = 0.33)
+  vol_csf <- compute_volume_ml(pve_csf, threshold = config$processing$pve_threshold)
+  vol_gm  <- compute_volume_ml(pve_gm,  threshold = config$processing$pve_threshold)
+  vol_wm  <- compute_volume_ml(pve_wm,  threshold = config$processing$pve_threshold)
 
 
   visit_csv <- file.path(visit_out, paste0(vname, "_volumes.csv"))
@@ -189,9 +192,9 @@ for (visit in sort(visit_dirs)) {
   par(mfrow = c(1,3), mar = c(2,2,2,2))
   mtext(paste("QC Overlay:", patient_id, "-", vname), side = 3, line = -2, outer = TRUE, cex = 1.5, font = 2)
 
-  try(ortho2(bet_img, pve_csf > 0.33, col.y = alpha("red", 0.5),  text = "CSF", xyz = c(128,128,170)), silent = TRUE)
-  try(ortho2(bet_img, pve_gm  > 0.33, col.y = alpha("blue", 0.5), text = "GM",  xyz = c(128,128,170)), silent = TRUE)
-  try(ortho2(bet_img, pve_wm  > 0.33, col.y = alpha("green", 0.5), text = "WM",  xyz = c(128,128,170)), silent = TRUE)
+  try(ortho2(bet_img, pve_csf > config$processing$pve_threshold, col.y = alpha("red", 0.5),  text = "CSF", xyz = c(128,128,170)), silent = TRUE)
+  try(ortho2(bet_img, pve_gm  > config$processing$pve_threshold, col.y = alpha("blue", 0.5), text = "GM",  xyz = c(128,128,170)), silent = TRUE)
+  try(ortho2(bet_img, pve_wm  > config$processing$pve_threshold, col.y = alpha("green", 0.5), text = "WM",  xyz = c(128,128,170)), silent = TRUE)
   dev.off()
 }
 

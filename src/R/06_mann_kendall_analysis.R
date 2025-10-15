@@ -19,6 +19,7 @@ suppressMessages({
     install.packages("data.table", repos = "https://cran.r-project.org/")
     library(data.table)
   }
+  library(yaml)
 })
 
 get_script_dir <- function() {
@@ -48,7 +49,13 @@ get_script_dir <- function() {
 script_dir <- get_script_dir()
 source(file.path(script_dir, "utils.R"))
 
-modified_sign <- function(x_j, x_k, threshold = 1.0) {
+config <- load_config()
+
+modified_sign <- function(x_j, x_k, threshold = NULL) {
+  if (is.null(threshold)) {
+    threshold <- config$processing$mann_kendall_threshold
+  }
+
   diff <- x_j - x_k
   ifelse(diff > threshold, 1, ifelse(diff < -threshold, -1, 0))
 }
