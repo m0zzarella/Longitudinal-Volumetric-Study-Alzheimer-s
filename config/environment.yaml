@@ -13,7 +13,8 @@ dependencies:
   - r-devtools
   - r-remotes
   - r-scales
-  
+  - r-yaml
+
   - python=3.11
   - numpy
   - nibabel
